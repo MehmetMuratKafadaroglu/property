@@ -9,14 +9,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
 func checkErr(e error) {
 	if e != nil {
-		panic(e)
+		fmt.Println(e.Error())
 	}
 }
 func get_properties(context *gin.Context) {
@@ -35,15 +33,47 @@ func get_properties(context *gin.Context) {
 	checkErr(err)
 
 	properties := db.SelectProperty(location, max_price, min_price, max_rooms, min_rooms, max_internal_area, min_internal_area)
+
 	context.IndentedJSON(http.StatusOK, properties)
+}
+
+func addImages(ctx *gin.Context) {
+	var images models.AddPropertyImages
+	err := ctx.BindJSON(&images)
+	checkErr(err)
+	err = checkUserFromClaims(ctx, images.PropertyID)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": 1})
+	} else {
+		db.ImageInsert(images.Images, images.PropertyID)
+		ctx.JSON(200, gin.H{"error": 0})
+	}
+}
+func deleteImages(ctx *gin.Context) {
+	var images models.PropertyImages
+	err := ctx.BindJSON(&images)
+	checkErr(err)
+	err = checkUserFromClaims(ctx, images.Images[0].ID)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": 1})
+	} else {
+		err = db.DeleteImage(&images)
+		if err != nil {
+			fmt.Println(err.Error())
+			ctx.JSON(400, gin.H{"error": 2})
+		} else {
+			ctx.JSON(200, gin.H{"error": 0})
+		}
+	}
+
 }
 func insert_properties(context *gin.Context) {
 	var newProperty models.Property
-	if err := context.BindJSON(&newProperty); err != nil {
-		fmt.Println(err.Error())
-		return
-	}
+	err := context.BindJSON(&newProperty)
+	checkErr(err)
 	db.InsertProperty(&newProperty)
+	err = db.ImageInsert(newProperty.Images, newProperty.ID)
+	checkErr(err)
 	context.IndentedJSON(http.StatusCreated, newProperty)
 }
 
@@ -55,6 +85,7 @@ func insert_user(context *gin.Context) {
 	id := db.InsertUser(newUser)
 	runes := utils.RandStringRunes(128)
 	url := settings.ServerUrl + "/verify/" + strconv.FormatInt(id, 10) + "/" + runes
+
 	utils.SendMail(newUser.Email, url)
 	db.InsertTemporaryKey(id, runes)
 	context.IndentedJSON(http.StatusCreated, newUser)
@@ -82,11 +113,6 @@ func login(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"token": token, "error": 0})
 }
 
-func logout(context *gin.Context) {
-	fmt.Println("Logout")
-	context.JSON(200, gin.H{"error": 0})
-}
-
 func save(ctx *gin.Context) {
 	userID, err := strconv.Atoi(ctx.Param("userID"))
 	checkErr(err)
@@ -96,6 +122,66 @@ func save(ctx *gin.Context) {
 	err = db.SaveProperty(userID, propertyID)
 	checkErr(err)
 	ctx.JSON(200, gin.H{"error": 0})
+}
+
+func editDeleteProperties(ctx *gin.Context, fn func(*models.Property)) {
+	var newProperty models.Property
+	err := ctx.BindJSON(&newProperty)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	err = checkUserFromClaims(ctx, newProperty.ID)
+	if err == nil {
+		fn(&newProperty)
+	} else {
+		ctx.JSON(400, gin.H{"error": 1}) //User is not the Author of the Property
+	}
+	ctx.JSON(200, gin.H{"error": 0})
+}
+
+func profile(ctx *gin.Context) {
+	authHeader := ctx.GetHeader("Authorization")
+	claims, err := utils.GetClaims(authHeader)
+	checkErr(err)
+	user := db.SelectProfile(claims.ID)
+	ctx.IndentedJSON(200, user)
+}
+
+func editUser(ctx *gin.Context) {
+	var user models.User
+	id, err := getUserIDFromClaims(ctx)
+	checkErr(err)
+	err = ctx.BindJSON(&user)
+	checkErr(err)
+	if user.ID != id {
+		ctx.JSON(400, gin.H{"error": 1})
+	} else {
+		db.EditUser(&user)
+		ctx.IndentedJSON(200, gin.H{"error": 0})
+	}
+}
+
+func selectUsersProperties(ctx *gin.Context) {
+	userID, err := strconv.Atoi(ctx.Param("userID"))
+	checkErr(err)
+	properties := db.GetUsersProperties(int64(userID))
+	ctx.IndentedJSON(http.StatusCreated, properties)
+}
+
+func getUserIDFromClaims(ctx *gin.Context) (int64, error) {
+	authHeader := ctx.GetHeader("Authorization")
+	claims, err := utils.GetClaims(authHeader)
+	if err != nil {
+		return 0, err
+	}
+	return claims.ID, nil
+}
+func checkUserFromClaims(ctx *gin.Context, propertyID int64) error {
+	id, err := getUserIDFromClaims(ctx)
+	checkErr(err)
+	err = db.IsUserAuthorOfProperty(id, propertyID)
+	return err
 }
 
 func Auth() gin.HandlerFunc {
@@ -114,18 +200,24 @@ func main() {
 	db.InitDatabase()
 	router := gin.Default()
 	router.Static("/assets", "./assets")
-	router.Use(sessions.Sessions("session", cookie.NewStore([]byte(settings.Secret))))
 
 	public := router.Group("/public")
+	public.GET("/verify/:userID/:key", verify_user)
 	public.GET("/properties/:location/:max_price/:min_price/:max_rooms/:min_rooms/:max_internal_area/:min_internal_area", get_properties)
 	public.POST("/user/", insert_user)
-	public.GET("/verify/:userID/:key", verify_user)
 	public.POST("/login/", login)
 
 	private := router.Group("/private")
 	private.Use(Auth())
+
 	private.POST("/add/properties/", insert_properties)
-	private.GET("/logout/", logout)
+	private.POST("/edit/properties/", func(ctx *gin.Context) { editDeleteProperties(ctx, db.EditProperty) })
+	private.POST("/delete/properties/", func(ctx *gin.Context) { editDeleteProperties(ctx, db.DeleteProperty) })
+	private.POST("/add/images/", addImages)       //Untested
+	private.POST("/delete/images/", deleteImages) //Untested
+	private.POST("/edit/profile/", editUser)
+	private.GET("/profile/", profile)
+	private.GET("/properties/:userID", selectUsersProperties)
 	private.GET("/save/:userID/:propertyID", save)
 	router.Run(settings.ServerName)
 }

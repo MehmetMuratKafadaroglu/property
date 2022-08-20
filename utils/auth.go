@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"fmt"
 	"go-rest/settings"
 	"time"
 
@@ -29,11 +28,19 @@ func GenerateToken(email string, id int64) string {
 	return tokenString
 }
 
+func GetClaims(token string) (Claims, error) {
+	claims := &Claims{}
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) { return []byte(settings.Secret), nil })
+	if err != nil {
+		return *claims, err
+	}
+	return *claims, nil
+}
+
 func VerifyToken(token string) (string, error) {
 	claims := &Claims{}
 	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) { return []byte(settings.Secret), nil })
 	if err != nil {
-		fmt.Println("1")
 		return "", err
 	}
 	if !tkn.Valid {
@@ -43,6 +50,7 @@ func VerifyToken(token string) (string, error) {
 	if time.Until(expiry) < 1*time.Second {
 		return "", errors.New("token's time expired")
 	}
+
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims.ExpiresAt = expirationTime.Unix()
 	_token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

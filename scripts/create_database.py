@@ -7,21 +7,19 @@ def delete_tables():
                             user="postgres",
                             password="630991")
     cur = conn.cursor()
-    print("Deleting Users")
-    cur.execute("DROP TABLE Users CASCADE")
-    print("Deleting Properties")
-    cur.execute("DROP TABLE Properties CASCADE") 
-    print("Deleting TemporaryKeys")
-    cur.execute("DROP TABLE TemporaryKeys CASCADE") 
-    print("Deleting TemporaryKeys")
-    cur.execute("DROP TABLE Saved CASCADE") 
-    print("Deleting Saved")
+    cur.execute("""DROP TABLE Users CASCADE;
+                DROP TABLE Properties CASCADE;
+                DROP TABLE TemporaryKeys CASCADE;
+                DROP TABLE Saved CASCADE;
+                DROP SEQUENCE propertyimages_sequence;
+                DROP TABLE PropertyImages CASCADE;""")
     conn.commit()
     conn.close()
 
-def create_tables():
+def create_tables(only_create=False):
         try:
-                delete_tables()
+                if not only_create:
+                        delete_tables()
         except:
                 pass
         conn = psycopg2.connect(host = "localhost", 
@@ -43,7 +41,7 @@ def create_tables():
         print("Creating Properties Table")
         cur.execute("""
                 CREATE TABLE Properties(
-                ID SERIAL PRIMARY KEY,
+                ID BIGINT PRIMARY KEY,
                 price INTEGER,
                 isForSale BOOLEAN,
                 numberOfRooms INTEGER,
@@ -55,7 +53,8 @@ def create_tables():
                 publishDate DATE,
                 authorID INTEGER REFERENCES Users(ID),
                 orienter VARCHAR(1024),
-                propertyType CHAR(20));
+                propertyType CHAR(20),
+                isPublished BOOLEAN);
 
                 CREATE INDEX properties_price_index ON Properties(price);
                 CREATE INDEX properties_numberofrooms_index ON Properties(numberOfRooms);
@@ -73,6 +72,7 @@ def create_tables():
                 CREATE INDEX temporarykeys_userid_index ON TemporaryKeys USING HASH(userID);   
                 """)
         print("Creating Saved")
+        
         cur.execute("""
                 CREATE TABLE Saved(
                 ID SERIAL PRIMARY KEY,
@@ -80,6 +80,20 @@ def create_tables():
                 userID INTEGER REFERENCES Users(ID) );
                 CREATE INDEX saved_userid_index ON Saved(userID);
         """)
+        print("Creating PropertyImages")
+        cur.execute("""
+                CREATE TABLE PropertyImages(
+                ID BIGINT PRIMARY KEY,
+                propertyID INTEGER REFERENCES Properties(ID),
+                fileName VARCHAR(255)
+                );
+        """)
+        conn.commit()
+        cur.execute("CREATE SEQUENCE propertyimages_sequence AS BIGINT OWNED BY PropertyImages.ID;")
+        cur.execute("CREATE SEQUENCE propertiesid_sequence AS BIGINT OWNED BY Properties.ID;")
         conn.commit()
         cur.close()
         conn.close()
+
+if __name__ == "__main__":
+        create_tables()
