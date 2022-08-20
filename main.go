@@ -85,8 +85,7 @@ func insert_user(context *gin.Context) {
 	id := db.InsertUser(newUser)
 	runes := utils.RandStringRunes(128)
 	url := settings.ServerUrl + "/verify/" + strconv.FormatInt(id, 10) + "/" + runes
-
-	utils.SendMail(newUser.Email, url)
+	utils.EmailQueue.Push(newUser.Email, url)
 	db.InsertTemporaryKey(id, runes)
 	context.IndentedJSON(http.StatusCreated, newUser)
 }
@@ -198,6 +197,7 @@ func Auth() gin.HandlerFunc {
 func main() {
 	utils.Init()
 	db.InitDatabase()
+	go utils.MailSender()
 	router := gin.Default()
 	router.Static("/assets", "./assets")
 

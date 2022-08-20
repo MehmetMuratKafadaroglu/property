@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"go-rest/models"
 	"go-rest/settings"
 	"math/rand"
 	"net/smtp"
@@ -15,7 +16,21 @@ const (
 	smtpPort = "587"
 )
 
-func SendMail(address string, url string) {
+var EmailQueue = models.NewQueue()
+
+func MailSender() {
+	for { //infinite loop
+		if EmailQueue.IsEmpty() {
+			time.Sleep(10000000000) // 10 seconds
+		} else {
+			time.Sleep(2000000000) // 2 seconds
+			sendMail(EmailQueue.Pop())
+		}
+
+	}
+
+}
+func sendMail(address string, url string) {
 	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
 	body := fmt.Sprintf(`
 	<html><body>
