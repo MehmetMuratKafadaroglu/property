@@ -70,7 +70,7 @@ func SelectProperty(location string, max_price int, min_price int, max_rooms int
 	price < $1 AND price > $2 AND
 	numberOfRooms < $3 AND numberOfRooms > $4 AND
 	internalArea < $5 AND internalArea > $6 AND
-	location = $7`, max_price,
+	location = $7 AND isPublished = true`, max_price,
 		min_price,
 		max_rooms,
 		min_rooms,
