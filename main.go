@@ -168,6 +168,9 @@ func selectUsersProperties(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusCreated, properties)
 }
 
+func selectLocations(ctx *gin.Context) {
+	ctx.IndentedJSON(200, gin.H{"error": 0, "locations": db.SelectLocations()})
+}
 func getUserIDFromClaims(ctx *gin.Context) (int64, error) {
 	authHeader := ctx.GetHeader("Authorization")
 	claims, err := utils.GetClaims(authHeader)
@@ -201,14 +204,15 @@ func main() {
 	router := gin.Default()
 	router.Static("/assets", "./assets")
 
+	private := router.Group("/private")
+	private.Use(Auth())
 	public := router.Group("/public")
+
 	public.GET("/verify/:userID/:key", verify_user)
 	public.GET("/properties/:location/:max_price/:min_price/:max_rooms/:min_rooms/:max_internal_area/:min_internal_area", get_properties)
 	public.POST("/user/", insert_user)
 	public.POST("/login/", login)
-
-	private := router.Group("/private")
-	private.Use(Auth())
+	public.GET("/locations/", selectLocations)
 
 	private.POST("/add/properties/", insert_properties)
 	private.POST("/edit/properties/", func(ctx *gin.Context) { editDeleteProperties(ctx, db.EditProperty) })

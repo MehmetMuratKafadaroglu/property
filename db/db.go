@@ -32,6 +32,18 @@ func InitDatabase() {
 	db.SetMaxOpenConns(200)
 	DB = db
 }
+
+func SelectLocations() []string {
+	var location string
+	var locations []string
+	rows, err := DB.Query("SELECT DISTINCT location FROM Properties")
+	check(err)
+	for rows.Next() {
+		rows.Scan(&location)
+		locations = append(locations, location)
+	}
+	return locations
+}
 func rowsToProperties(rows *sql.Rows) []models.PropertyWithImage {
 	var properties []models.PropertyWithImage
 	var selectProperty models.PropertyWithImage
