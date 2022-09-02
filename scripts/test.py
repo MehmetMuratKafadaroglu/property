@@ -76,7 +76,7 @@ class Test(unittest.TestCase):
         conn.close()
 
     def test_select(self):
-        url = "/public/properties/Samarkand/1000000/0/1000/0/1000/0"
+        url = "/public/properties/Samarkand/1000000/0/1000/0/1000/0/true"
         vals =get_as_json(url)
         properties = get_properties(" WHERE location='Samarkand'")
         for i, property in enumerate(properties):

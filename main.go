@@ -31,8 +31,10 @@ func get_properties(context *gin.Context) {
 	checkErr(err)
 	min_internal_area, err := strconv.Atoi(context.Param("min_internal_area"))
 	checkErr(err)
+	is_for_sale, err := strconv.ParseBool(context.Param("is_for_sale"))
+	checkErr(err)
 
-	properties := db.SelectProperty(location, max_price, min_price, max_rooms, min_rooms, max_internal_area, min_internal_area)
+	properties := db.SelectProperty(location, max_price, min_price, max_rooms, min_rooms, max_internal_area, min_internal_area, is_for_sale)
 
 	context.IndentedJSON(http.StatusOK, properties)
 }
@@ -209,7 +211,7 @@ func main() {
 	public := router.Group("/public")
 
 	public.GET("/verify/:userID/:key", verify_user)
-	public.GET("/properties/:location/:max_price/:min_price/:max_rooms/:min_rooms/:max_internal_area/:min_internal_area", get_properties)
+	public.GET("/properties/:location/:max_price/:min_price/:max_rooms/:min_rooms/:max_internal_area/:min_internal_area/:is_for_sale", get_properties)
 	public.POST("/user/", insert_user)
 	public.POST("/login/", login)
 	public.GET("/locations/", selectLocations)

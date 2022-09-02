@@ -76,19 +76,20 @@ func rowsToProperties(rows *sql.Rows) []models.PropertyWithImage {
 }
 
 func SelectProperty(location string, max_price int, min_price int, max_rooms int, min_rooms int,
-	max_internal_area int, min_internal_area int) []models.PropertyWithImage {
+	max_internal_area int, min_internal_area int, is_for_sale bool) []models.PropertyWithImage {
 	rows, err := DB.Query(`
 	SELECT * FROM Properties WHERE 
 	price < $1 AND price > $2 AND
 	numberOfRooms < $3 AND numberOfRooms > $4 AND
 	internalArea < $5 AND internalArea > $6 AND
-	location = $7 AND isPublished = true`, max_price,
+	location = $7 AND isPublished = true AND isForSale=$8`, max_price,
 		min_price,
 		max_rooms,
 		min_rooms,
 		max_internal_area,
 		min_internal_area,
-		location)
+		location,
+		is_for_sale)
 	check(err)
 	return rowsToProperties(rows)
 }
