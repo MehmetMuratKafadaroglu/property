@@ -53,7 +53,7 @@ def create_tables(only_create=False):
                 publishDate DATE,
                 authorID INTEGER REFERENCES Users(ID),
                 orienter VARCHAR(1024),
-                propertyType CHAR(20),
+                propertyType VARCHAR(20),
                 isPublished BOOLEAN);
 
                 CREATE INDEX properties_price_index ON Properties(price);

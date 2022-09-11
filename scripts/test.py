@@ -1,4 +1,3 @@
-from cgi import print_form
 from create_database import create_tables
 import requests
 import unittest
@@ -173,8 +172,17 @@ class Test(unittest.TestCase):
         self.assertEqual(company_name, "GG")
     def test_select_selected_properties(self):
         req = requests.get(URL + "/private/properties/saved/", headers={"Authorization": self.token})    
-        print("\n")
-        print(req.content)
+        conn = psycopg2.connect(host = "localhost", 
+                                dbname=DATABASE, 
+                                user="postgres",
+                                password="630991")
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM Properties WHERE ID IN (SELECT propertyID FROM Saved WHERE userID=%s)"%get_user_id(" WHERE email='%s' "%self.user['email']))
+        req = json.loads(req.content)
+        val = cur.fetchall()
+        self.assertEqual(sum([1 for i,j in zip(val, req) if j['property']['id'] == i[0]]) , len(val))
+        conn.close()
+       
 def is_property_saved(user_id, property_id):
     conn = psycopg2.connect(host = "localhost", 
                             dbname=DATABASE, 
