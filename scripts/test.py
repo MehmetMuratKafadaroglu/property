@@ -171,7 +171,10 @@ class Test(unittest.TestCase):
         res = get_user(" WHERE email ='%s'"%user['email'])
         company_name =res[0][2]
         self.assertEqual(company_name, "GG")
-
+    def test_select_selected_properties(self):
+        req = requests.get(URL + "/private/properties/saved/", headers={"Authorization": self.token})    
+        print("\n")
+        print(req.content)
 def is_property_saved(user_id, property_id):
     conn = psycopg2.connect(host = "localhost", 
                             dbname=DATABASE, 

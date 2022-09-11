@@ -74,7 +74,11 @@ func rowsToProperties(rows *sql.Rows) []models.PropertyWithImage {
 	}
 	return properties
 }
-
+func SelectSavedProperties(userID int64) []models.PropertyWithImage {
+	rows, err := DB.Query(`SELECT * FROM Properties WHERE ID IN (SELECT propertyID FROM Saved WHERE userID=$1)`, userID)
+	check(err)
+	return rowsToProperties(rows)
+}
 func SelectProperty(location string, max_price int, min_price int, max_rooms int, min_rooms int,
 	max_internal_area int, min_internal_area int, is_for_sale bool) []models.PropertyWithImage {
 	rows, err := DB.Query(`

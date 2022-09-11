@@ -173,6 +173,14 @@ func selectUsersProperties(ctx *gin.Context) {
 func selectLocations(ctx *gin.Context) {
 	ctx.IndentedJSON(200, gin.H{"error": 0, "locations": db.SelectLocations()})
 }
+func getSavedProperties(ctx *gin.Context) {
+	userID, err := getUserIDFromClaims(ctx)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	properties := db.SelectSavedProperties(userID)
+	ctx.IndentedJSON(http.StatusCreated, properties)
+}
 func getUserIDFromClaims(ctx *gin.Context) (int64, error) {
 	authHeader := ctx.GetHeader("Authorization")
 	claims, err := utils.GetClaims(authHeader)
@@ -225,5 +233,6 @@ func main() {
 	private.GET("/profile/", profile)
 	private.GET("/properties/:userID", selectUsersProperties)
 	private.GET("/save/:userID/:propertyID", save)
+	private.GET("/properties/saved/", getSavedProperties)
 	router.Run(settings.ServerName)
 }
