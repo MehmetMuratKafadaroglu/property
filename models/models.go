@@ -17,7 +17,6 @@ type Property struct {
 	Images        []string `json:"images"`
 	IsPublished   bool     `json:"isPublished"`
 }
-
 type User struct {
 	ID             int64  `json:"id"`
 	Email          string `json:"email"`

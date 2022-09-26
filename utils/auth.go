@@ -8,6 +8,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+const oneMonth = 43800
+
 type Claims struct {
 	ID    int64  `json:"id"`
 	Email string `json:"email"`
@@ -15,7 +17,7 @@ type Claims struct {
 }
 
 func GenerateToken(email string, id int64) string {
-	expirationTime := time.Now().Add(5 * time.Minute).Unix()
+	expirationTime := time.Now().Add(oneMonth * 3 * time.Minute).Unix()
 	claims := &Claims{
 		ID:    id,
 		Email: email,

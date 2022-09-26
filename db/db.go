@@ -237,12 +237,14 @@ func CanUserLogIn(password string, email string) int64 {
 	var _id int64
 	e := DB.QueryRow("SELECT ID,password,isMailVerified FROM Users WHERE email = $1", email).Scan(&_id, &pass, &is_verified)
 	if e != nil {
-		return 0
+		return -3
 	}
 	hash, err := base64.StdEncoding.DecodeString(pass)
 	check(err)
 	e = bcrypt.CompareHashAndPassword(hash, []byte(password))
-	check(e)
+	if e != nil {
+		return -1
+	}
 	return _id
 }
 

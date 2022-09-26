@@ -133,9 +133,9 @@ class Test(unittest.TestCase):
     def test_select_users_properties(self):
         insert_dummy_property(self.userID)
         properties = get_properties(" WHERE authorID=%s"%self.userID)
-        val = requests.get(URL + "/private/properties/%s"%(self.userID), headers={"Authorization": self.token})
+        val = requests.get(URL + "/private/select/properties/", headers={"Authorization": self.token})
         val  = json.loads(val.content)
-        values = [i['property'] for i in val]
+        values = [i['property'] for i in val['data']]
         for i, value in enumerate(values):
             property = properties[i]
             _id = property[0]

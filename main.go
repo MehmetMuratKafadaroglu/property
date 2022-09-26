@@ -102,15 +102,18 @@ func verify_user(context *gin.Context) {
 func login(context *gin.Context) {
 	var user models.LoginUser
 	if err := context.BindJSON(&user); err != nil {
-		fmt.Println(err.Error())
 		return
 	}
-	_id := db.CanUserLogIn(user.Password, user.Email)
-	if _id == 0 {
+	id := db.CanUserLogIn(user.Password, user.Email)
+	if id == -3 {
+		context.JSON(http.StatusOK, gin.H{"token": "", "error": 3})
+		return
+	}
+	if id == -1 {
 		context.JSON(http.StatusOK, gin.H{"token": "", "error": 1})
 		return
 	}
-	token := utils.GenerateToken(user.Email, _id)
+	token := utils.GenerateToken(user.Email, id)
 	context.JSON(http.StatusOK, gin.H{"token": token, "error": 0})
 }
 
@@ -164,10 +167,12 @@ func editUser(ctx *gin.Context) {
 }
 
 func selectUsersProperties(ctx *gin.Context) {
-	userID, err := strconv.Atoi(ctx.Param("userID"))
+	authHeader := ctx.GetHeader("Authorization")
+	claims, err := utils.GetClaims(authHeader)
 	checkErr(err)
-	properties := db.GetUsersProperties(int64(userID))
-	ctx.IndentedJSON(http.StatusCreated, properties)
+	properties := db.GetUsersProperties(int64(claims.ID))
+	token := utils.GenerateToken(claims.Email, claims.ID)
+	ctx.IndentedJSON(http.StatusOK, gin.H{"data": properties, "token": token})
 }
 
 func selectLocations(ctx *gin.Context) {
@@ -201,7 +206,7 @@ func Auth() gin.HandlerFunc {
 		authHeader := context.GetHeader("Authorization")
 		token, err := utils.VerifyToken(authHeader)
 		if err != nil {
-			context.AbortWithStatus(400)
+			context.AbortWithStatusJSON(http.StatusOK, gin.H{"error": 2})
 		}
 		context.Header("Token", token)
 		context.Next()
@@ -225,13 +230,13 @@ func main() {
 	public.GET("/locations/", selectLocations)
 
 	private.POST("/add/properties/", insert_properties)
+	private.GET("/select/properties/", selectUsersProperties)
 	private.POST("/edit/properties/", func(ctx *gin.Context) { editDeleteProperties(ctx, db.EditProperty) })
 	private.POST("/delete/properties/", func(ctx *gin.Context) { editDeleteProperties(ctx, db.DeleteProperty) })
 	private.POST("/add/images/", addImages)       //Untested
 	private.POST("/delete/images/", deleteImages) //Untested
 	private.POST("/edit/profile/", editUser)
 	private.GET("/profile/", profile)
-	private.GET("/properties/:userID", selectUsersProperties)
 	private.GET("/save/:userID/:propertyID", save)
 	private.GET("/properties/saved/", getSavedProperties)
 	router.Run(settings.ServerName)
