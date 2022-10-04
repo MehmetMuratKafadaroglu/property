@@ -139,9 +139,9 @@ func editDeleteProperties(ctx *gin.Context, fn func(*models.Property)) {
 	if err == nil {
 		fn(&newProperty)
 	} else {
-		ctx.JSON(400, gin.H{"error": 1}) //User is not the Author of the Property
+		ctx.JSON(http.StatusOK, gin.H{"error": 1}) //User is not the Author of the Property
 	}
-	ctx.JSON(200, gin.H{"error": 0})
+	ctx.JSON(http.StatusOK, gin.H{"error": 0})
 }
 
 func profile(ctx *gin.Context) {

@@ -67,7 +67,7 @@ def create_tables(only_create=False):
         cur.execute("""
                 CREATE TABLE TemporaryKeys(
                 ID SERIAL PRIMARY KEY,
-                userID INTEGER REFERENCES Users(ID),
+                userID INTEGER REFERENCES Users(ID) ON DELETE CASCADE,
                 key CHAR(128));
                 CREATE INDEX temporarykeys_userid_index ON TemporaryKeys USING HASH(userID);   
                 """)
@@ -76,15 +76,15 @@ def create_tables(only_create=False):
         cur.execute("""
                 CREATE TABLE Saved(
                 ID SERIAL PRIMARY KEY,
-                propertyID INTEGER REFERENCES Properties(ID),
-                userID INTEGER REFERENCES Users(ID) );
-                CREATE INDEX saved_userid_index ON Saved(userID);
+                propertyID INTEGER REFERENCES Properties(ID) ON DELETE CASCADE,
+                userID INTEGER REFERENCES Users(ID) ON DELETE CASCADE );
+                CREATE INDEX saved_userid_index ON Saved(userID) ;
         """)
         print("Creating PropertyImages")
         cur.execute("""
                 CREATE TABLE PropertyImages(
                 ID BIGINT PRIMARY KEY,
-                propertyID INTEGER REFERENCES Properties(ID),
+                propertyID INTEGER REFERENCES Properties(ID) ON DELETE CASCADE,
                 fileName VARCHAR(255)
                 );
         """)

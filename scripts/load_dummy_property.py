@@ -4,7 +4,7 @@ from time import time
 
 NUMBER = 100
 DATABASE = "property"
-prices = [int(random() * 100000) for i in range(NUMBER)]
+prices = [int(random() * 100000) for _ in range(NUMBER)]
 conn = psycopg2.connect(host = "localhost", 
                             dbname=DATABASE, 
                             user="postgres",
@@ -67,6 +67,7 @@ def main():
         property['numberOfRooms'] = int(random() * 5) + 1
         property['propertyType'] = types[i%3]
         property['price'] = prices[i]
+        property['isForSale'] = not i%2
         l = str("%s, ")* 14
         sql_statment = """INSERT INTO Properties(
         ID, price, isForSale, numberOfRooms, location,

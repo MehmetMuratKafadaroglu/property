@@ -129,7 +129,8 @@ func EditProperty(property *models.Property) {
 func DeleteProperty(property *models.Property) {
 	stmt, err := DB.Prepare("DELETE FROM Properties WHERE ID=$1")
 	check(err)
-	stmt.Exec(property.ID)
+	_, err = stmt.Exec(property.ID)
+	check(err)
 }
 func InsertProperty(property *models.Property) {
 	id := GetSequenceValue("propertiesid_sequence")
