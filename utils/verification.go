@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	from     = "mailsender@adreact.com"
-	password = "gheb4gsiPPWC"
+	from     = ""
+	password = ""
 	smtpHost = "smtp.gmail.com"
 	smtpPort = "587"
 )
